@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>QuickCart POS — Point of Sale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d;--surface:#161616;--surface2:#1e1e1e;--surface3:#252525;
+  --border:#2a2a2a;--border2:#333;--text:#fff;--text2:rgba(255,255,255,.6);
+  --text3:rgba(255,255,255,.35);--accent:#ff4d00;--green:#00c076;
+  --red:#ff3b3b;--gold:#f5c842;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;}
+button,input,select{font-family:inherit;cursor:pointer;}
+.top-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:16px;flex-shrink:0;}
+.pos-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#fff;letter-spacing:-.02em;display:flex;align-items:center;gap:8px;}
+.pos-logo .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);}
+.top-bar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.tb-btn{background:none;border:1px solid var(--border2);color:var(--text2);padding:6px 14px;font-size:11px;font-weight:600;transition:.15s;letter-spacing:.04em;text-transform:uppercase;}
+.tb-btn:hover{border-color:var(--text);color:var(--text);}
+.status-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:4px 10px;border:1px solid;border-radius:0;}
+.status-pill.online{color:var(--green);border-color:rgba(0,192,118,.3);background:rgba(0,192,118,.08);}
+.status-pill.offline{color:var(--gold);border-color:rgba(245,200,66,.3);background:rgba(245,200,66,.08);}
+.sdot{width:6px;height:6px;border-radius:50%;animation:sdp 1.5s infinite;}
+.sdot.online{background:var(--green);}
+.sdot.offline{background:var(--gold);}
+@keyframes sdp{0%,100%{opacity:1;}50%{opacity:.3;}}
+.pos-main{flex:1;display:grid;grid-template-columns:1fr 380px;overflow:hidden;}
+.pos-catalogue{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;}
+.cat-top{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.search-bar{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);padding:8px 12px;}
+.search-bar input{flex:1;background:none;border:none;color:var(--text);font-size:13px;outline:none;}
+.search-bar input::placeholder{color:var(--text3);}
+.cat-filters{display:flex;gap:0;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.cat-filters::-webkit-scrollbar{display:none;}
+.cat-pill{background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);font-size:11px;font-weight:600;padding:10px 16px;white-space:nowrap;transition:.15s;letter-spacing:.04em;text-transform:uppercase;}
+.cat-pill.on{color:var(--text);border-bottom-color:var(--accent);}
+.prod-grid-wrap{flex:1;overflow-y:auto;padding:12px;}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+.prod-card{background:var(--surface);border:1px solid var(--border);padding:14px;transition:.15s;position:relative;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;}
+.prod-card:hover{border-color:var(--accent);background:var(--surface2);}
+.prod-card:active{transform:scale(.97);}
+.prod-card.oos{opacity:.4;pointer-events:none;}
+.prod-img{width:100%;height:72px;object-fit:contain;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:10px;}
+.prod-img img{width:100%;height:100%;object-fit:contain;}
+.prod-name{font-size:12px;font-weight:600;line-height:1.4;margin-bottom:4px;color:var(--text);}
+.prod-price{font-family:'DM Mono',monospace;font-size:13px;color:var(--gold);}
+.prod-stock{font-size:10px;color:var(--text3);margin-top:3px;}
+.oos-tag{position:absolute;top:6px;right:6px;background:var(--red);color:#fff;font-size:8px;font-weight:700;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase;}
+.pos-cart{display:flex;flex-direction:column;background:var(--surface);overflow:hidden;}
+.cart-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.cart-header h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;}
+.cart-count{background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.cart-clear{background:none;border:1px solid var(--border2);color:var(--text3);padding:5px 12px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;transition:.15s;}
+.cart-clear:hover{border-color:var(--red);color:var(--red);}
+.cart-items{flex:1;overflow-y:auto;padding:6px;}
+.cart-item{display:flex;align-items:center;gap:8px;padding:10px 8px;border-bottom:1px solid var(--border);}
+.ci-name{flex:1;font-size:12px;font-weight:600;line-height:1.3;}
+.ci-meta{font-size:10px;color:var(--text3);margin-top:2px;}
+.ci-qrow{display:flex;align-items:center;gap:5px;}
+.ci-qbtn{background:var(--surface3);border:none;color:var(--text);width:26px;height:26px;font-size:14px;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.ci-qbtn:hover{background:var(--accent);color:#fff;}
+.ci-qty{font-family:'DM Mono',monospace;font-size:13px;font-weight:600;width:28px;text-align:center;}
+.ci-price{font-family:'DM Mono',monospace;font-size:13px;color:var(--gold);min-width:72px;text-align:right;}
+.ci-del{background:none;border:none;color:var(--text3);font-size:16px;padding:4px;transition:.15s;line-height:1;}
+.ci-del:hover{color:var(--red);}
+.cart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text3);gap:10px;text-align:center;}
+.cart-empty span{font-size:40px;}
+.cart-totals{padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;}
+.tot-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px;}
+.tot-row.grand{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);margin-top:8px;padding-top:8px;border-top:1px solid var(--border2);}
+.tot-row.grand span:last-child{color:var(--gold);}
+.disc-row{display:flex;gap:6px;margin-bottom:8px;}
+.disc-inp{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:7px 10px;font-size:12px;outline:none;}
+.disc-type{background:var(--surface2);border:1px solid var(--border2);color:var(--text2);padding:7px 8px;font-size:12px;outline:none;}
+.disc-apply{background:none;border:1px solid var(--border2);color:var(--text2);padding:7px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;transition:.15s;}
+.disc-apply:hover{border-color:var(--green);color:var(--green);}
+.pay-section{padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;}
+.pay-methods{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px;}
+.pay-method{background:var(--surface2);border:2px solid var(--border2);color:var(--text2);padding:8px 4px;font-size:10px;font-weight:700;text-align:center;letter-spacing:.04em;text-transform:uppercase;transition:.15s;line-height:1.5;}
+.pay-method:hover,.pay-method.on{border-color:var(--accent);color:var(--text);background:rgba(255,77,0,.1);}
+.pay-ico{font-size:16px;display:block;margin-bottom:2px;}
+.pay-amt-row{display:flex;gap:6px;margin-bottom:8px;}
+.pay-inp{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:10px 12px;font-size:15px;font-family:'DM Mono',monospace;outline:none;transition:.15s;}
+.pay-inp:focus{border-color:var(--accent);}
+.pay-change{background:rgba(0,192,118,.1);border:1px solid rgba(0,192,118,.2);padding:8px 12px;font-size:13px;color:var(--green);font-family:'DM Mono',monospace;font-weight:600;text-align:right;display:none;flex-shrink:0;}
+.checkout-btn{width:100%;background:var(--accent);border:none;color:#fff;padding:14px;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;letter-spacing:-.01em;transition:.2s;}
+.checkout-btn:hover:not(:disabled){background:#c83700;}
+.checkout-btn:disabled{background:var(--surface3);color:var(--text3);}
+.receipt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:600;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.receipt-overlay.open{display:flex;}
+.receipt-box{background:#fff;color:#000;width:320px;max-height:90vh;overflow-y:auto;}
+.receipt-inner{padding:22px;font-family:'DM Mono',monospace;font-size:12px;line-height:1.6;}
+.r-logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;text-align:center;margin-bottom:4px;}
+.r-sub{text-align:center;font-size:10px;color:#666;margin-bottom:14px;}
+.r-divider{border-top:2px dashed #ddd;margin:10px 0;}
+.r-item{display:flex;justify-content:space-between;margin-bottom:5px;}
+.r-item .n{flex:1;padding-right:8px;}
+.r-total-sec{margin-top:10px;padding-top:8px;border-top:2px solid #000;}
+.r-total-row{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:3px;}
+.r-thank{text-align:center;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-top:18px;padding-top:14px;border-top:2px dashed #ddd;}
+.receipt-actions{padding:14px;border-top:2px solid #eee;display:flex;gap:8px;}
+.receipt-actions button{flex:1;padding:11px;font-size:12px;font-weight:700;border:none;cursor:pointer;text-transform:uppercase;letter-spacing:.06em;}
+.r-print{background:#000;color:#fff;}
+.r-new{background:var(--accent);color:#fff;}
+.summary-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:600;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.summary-overlay.open{display:flex;}
+.sum-box{background:var(--surface);border:1px solid var(--border2);width:460px;max-height:90vh;overflow-y:auto;}
+.sum-hd{background:var(--bg);padding:22px;border-bottom:1px solid var(--border);}
+.sum-hd h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:3px;}
+.sum-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);margin:14px 0;}
+.sstat{background:var(--surface2);padding:14px;text-align:center;}
+.sstat .v{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:3px;}
+.sstat .l{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;}
+.pos-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--surface2);color:var(--text);border:1px solid var(--border2);font-size:13px;font-weight:500;padding:11px 22px;z-index:9999;opacity:0;transition:.3s;pointer-events:none;}
+.pos-toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+.pos-toast.success{background:rgba(0,192,118,.15);border-color:rgba(0,192,118,.3);color:var(--green);}
+.pos-toast.error{background:rgba(255,59,59,.15);border-color:rgba(255,59,59,.3);color:var(--red);}
+@media(max-width:768px){.pos-main{grid-template-columns:1fr;grid-template-rows:1fr auto;}.pos-cart{max-height:52vh;}.prod-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));}.pay-methods{grid-template-columns:repeat(2,1fr);}}
+</style></head><body>
+<div class="top-bar">
+  <div class="pos-logo"><div class="dot"></div>QuickCart <span style="color:rgba(255,255,255,.35);font-weight:400;font-size:13px;margin-left:4px;">POS</span></div>
+  <span style="font-size:11px;color:rgba(255,255,255,.3);">Cashier: <strong id="cashier-nm" style="color:rgba(255,255,255,.6);">—</strong> &nbsp;·&nbsp; <span id="sess-date">—</span></span>
+  <div id="conn-status" class="status-pill online"><div class="sdot online"></div>Online</div>
+  <div class="top-bar-right">
+    <button class="tb-btn" onclick="openSummary()">📊 Day Report</button>
+    <button class="tb-btn" onclick="window.location.href='admin.html'">← Dashboard</button>
+  </div>
+</div>
+<div class="pos-main">
+  <div class="pos-catalogue">
+    <div class="cat-top">
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="pos-search" placeholder="Search products…" oninput="posSearch(this.value)" autofocus>
+      </div>
+    </div>
+    <div class="cat-filters" id="pos-cats">
+      <button class="cat-pill on" onclick="filterCat('All',this)">All</button>
+    </div>
+    <div class="prod-grid-wrap">
+      <div class="prod-grid" id="pos-grid">
+        <div class="cart-empty"><span>⏳</span><p>Loading products…</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="pos-cart">
+    <div class="cart-header">
+      <h3>🛒 Sale <span class="cart-count" id="c-count">0</span></h3>
+      <button class="cart-clear" onclick="clearCart()">✕ Clear</button>
+    </div>
+    <div class="cart-items" id="c-items"><div class="cart-empty"><span>🛒</span><p>Tap products to add</p></div></div>
+    <div class="cart-totals">
+      <div class="tot-row"><span>Subtotal</span><span id="c-subtotal">₦0</span></div>
+      <div class="disc-row">
+        <input class="disc-inp" type="number" id="disc-val" placeholder="Discount…" min="0">
+        <select class="disc-type" id="disc-type"><option value="amount">₦</option><option value="percent">%</option></select>
+        <button class="disc-apply" onclick="applyDiscount()">Apply</button>
+      </div>
+      <div class="tot-row" id="disc-show" style="display:none;color:var(--green);"><span>Discount</span><span id="c-disc">−₦0</span></div>
+      <div class="tot-row grand"><span>Total</span><span id="c-total">₦0</span></div>
+    </div>
+    <div class="pay-section">
+      <div class="pay-methods">
+        <button class="pay-method on" onclick="selPay('cash',this)"><span class="pay-ico">💵</span>Cash</button>
+        <button class="pay-method" onclick="selPay('card',this)"><span class="pay-ico">💳</span>Card</button>
+        <button class="pay-method" onclick="selPay('transfer',this)"><span class="pay-ico">🏦</span>Transfer</button>
+        <button class="pay-method" onclick="selPay('split',this)"><span class="pay-ico">✂️</span>Split</button>
+      </div>
+      <div class="pay-amt-row">
+        <input class="pay-inp" type="number" id="pay-amt" placeholder="Amount received…" oninput="calcChange()">
+        <div class="pay-change" id="pay-change">Change: ₦0</div>
+      </div>
+      <button class="checkout-btn" id="c-btn" onclick="processCheckout()" disabled>Complete Sale →</button>
+    </div>
+  </div>
+</div>
+<!-- RECEIPT -->
+<div class="receipt-overlay" id="rec-overlay">
+  <div class="receipt-box">
+    <div class="receipt-inner" id="rec-inner"></div>
+    <div class="receipt-actions">
+      <button class="r-print" onclick="window.print()">🖨 Print</button>
+      <button class="r-new" onclick="newSale()">+ New Sale</button>
+    </div>
+  </div>
+</div>
+<!-- DAY SUMMARY -->
+<div class="summary-overlay" id="sum-overlay">
+  <div class="sum-box">
+    <div class="sum-hd">
+      <h2>📊 Day Report</h2>
+      <p id="sum-date-lbl" style="font-size:12px;color:rgba(255,255,255,.4);">—</p>
+    </div>
+    <div style="padding:16px;">
+      <div class="sum-stats">
+        <div class="sstat"><div class="v" id="s-txns" style="color:var(--gold);">0</div><div class="l">Sales</div></div>
+        <div class="sstat"><div class="v" id="s-rev" style="color:var(--green);">₦0</div><div class="l">Revenue</div></div>
+        <div class="sstat"><div class="v" id="s-items">0</div><div class="l">Items</div></div>
+      </div>
+      <div style="margin-bottom:12px;"><div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Payment Breakdown</div><div id="s-pay" style="display:flex;flex-direction:column;gap:5px;"></div></div>
+      <div style="margin-bottom:14px;"><div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Recent Sales</div><div id="s-txn-list" style="display:flex;flex-direction:column;gap:5px;max-height:160px;overflow-y:auto;"></div></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="exportDay()" style="flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);padding:11px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;transition:.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text2)'">⬇ CSV</button>
+        <button onclick="document.getElementById('sum-overlay').classList.remove('open')" style="flex:2;background:var(--accent);border:none;color:#fff;padding:11px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;transition:.2s;" onmouseover="this.style.background='#c83700'" onmouseout="this.style.background='var(--accent)'">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="pos-toast" id="pos-toast"></div>
+<script>
+var FB='https://sneakerai-c96f0-default-rtdb.firebaseio.com';
+function getNS(){var u=localStorage.getItem('qc_logged_user')||'';return(!u||u==='admin')?FB:FB+'/users/'+encodeURIComponent(u);}
+var NS=getNS(),DB=NS+'/products',ODB=NS+'/orders';
+var _prods=[],_cart=[],_pay='cash',_disc=0,_txns=[];
+
+window.addEventListener('DOMContentLoaded',function(){
+  var u=localStorage.getItem('qc_biz_name')||localStorage.getItem('qc_logged_user')||'Cashier';
+  document.getElementById('cashier-nm').textContent=u;
+  var now=new Date();
+  document.getElementById('sess-date').textContent=now.toLocaleDateString('en-NG',{weekday:'short',day:'numeric',month:'short'});
+  document.getElementById('sum-date-lbl').textContent=now.toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  loadProds();
+  window.addEventListener('online',function(){updateConn();syncOffline();});
+  window.addEventListener('offline',updateConn);
+  updateConn();
+});
+
+function updateConn(){
+  var el=document.getElementById('conn-status'),on=navigator.onLine;
+  el.className='status-pill '+(on?'online':'offline');
+  el.innerHTML='<div class="sdot '+(on?'online':'offline')+'"></div>'+(on?'Online':'Offline');
+}
+
+async function loadProds(){
+  try{
+    var r=await fetch(DB+'.json');var d=await r.json();
+    _prods=d?Object.entries(d).map(function(e){return Object.assign({_k:e[0]},e[1]);}):[];
+    try{localStorage.setItem('qc_pos_cache',JSON.stringify(_prods));}catch(e){}
+  }catch(err){
+    var c=localStorage.getItem('qc_pos_cache');
+    _prods=c?JSON.parse(c):[];
+    posToast('⚡ Offline — cached products','error');
+  }
+  buildCats();renderGrid(_prods);
+}
+
+function buildCats(){
+  var cats=['All'];
+  _prods.forEach(function(p){if(p.category&&!cats.includes(p.category))cats.push(p.category);});
+  var bar=document.getElementById('pos-cats');
+  bar.innerHTML=cats.map(function(c,i){
+    return '<button class="cat-pill'+(i===0?' on':'')+'" onclick="filterCat(\''+c+'\',this)">'+
+      ({Smartphones:'📱',Laptops:'💻',Gaming:'🎮',Electronics:'🔌',Accessories:'🎧'}[c]||'')+(c==='All'?'All':' '+c)+'</button>';
+  }).join('');
+}
+
+function filterCat(cat,btn){
+  document.querySelectorAll('.cat-pill').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  renderGrid(cat==='All'?_prods:_prods.filter(function(p){return p.category===cat;}));
+}
+
+function posSearch(q){
+  q=q.toLowerCase();
+  renderGrid(q?_prods.filter(function(p){return ((p.name||'')+(p.brand||'')+(p.category||'')).toLowerCase().includes(q);}):_prods);
+}
+
+function renderGrid(list){
+  var g=document.getElementById('pos-grid');
+  if(!list.length){g.innerHTML='<div class="cart-empty"><span>🔍</span><p>No products</p></div>';return;}
+  var cats={Smartphones:'📱',Laptops:'💻',Gaming:'🎮',Electronics:'🔌',Accessories:'🎧'};
+  g.innerHTML=list.map(function(p){
+    var qty=Number(p.quantity)||0,oos=p.inStock===false||qty===0;
+    var ico=p.image?'<img src="'+p.image+'" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.textContent=\''+(cats[p.category]||'📦')+'\'">':(cats[p.category]||'📦');
+    return '<div class="prod-card'+(oos?' oos':'')+'" onclick="addItem(\''+p._k+'\')">'
+      +(oos?'<div class="oos-tag">Out</div>':'')
+      +'<div class="prod-img">'+ico+'</div>'
+      +'<div class="prod-name">'+esc(p.name||'')+'</div>'
+      +'<div class="prod-price">₦'+Math.round(Number(p.price)||0).toLocaleString('en-NG')+'</div>'
+      +'<div class="prod-stock">'+(oos?'No stock':'In stock: '+qty)+'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function addItem(k){
+  var p=_prods.find(function(x){return x._k===k;});if(!p)return;
+  var ex=_cart.find(function(i){return i._k===k;});
+  if(ex)ex.qty++;
+  else _cart.push({_k:k,name:p.name||'Product',price:Number(p.price)||0,qty:1});
+  renderCart();posToast('+ '+p.name,'success');
+}
+
+function remItem(k){_cart=_cart.filter(function(i){return i._k!==k;});renderCart();}
+function adjQty(k,d){var i=_cart.find(function(x){return x._k===k;});if(!i)return;i.qty=Math.max(1,i.qty+d);renderCart();}
+function clearCart(){if(_cart.length&&!confirm('Clear sale?'))return;_cart=[];_disc=0;document.getElementById('disc-val').value='';document.getElementById('disc-show').style.display='none';renderCart();}
+
+function renderCart(){
+  var el=document.getElementById('c-items');
+  var cnt=_cart.reduce(function(s,i){return s+i.qty;},0);
+  document.getElementById('c-count').textContent=cnt;
+  if(!_cart.length){
+    el.innerHTML='<div class="cart-empty"><span>🛒</span><p>Tap products to add</p></div>';
+    ['c-subtotal','c-total'].forEach(function(id){document.getElementById(id).textContent='₦0';});
+    document.getElementById('c-btn').disabled=true;
+    return;
+  }
+  el.innerHTML=_cart.map(function(item){
+    return '<div class="cart-item">'
+      +'<div style="flex:1;"><div class="ci-name">'+esc(item.name)+'</div><div class="ci-meta">₦'+Math.round(item.price).toLocaleString('en-NG')+' each</div></div>'
+      +'<div class="ci-qrow"><button class="ci-qbtn" onclick="adjQty(\''+item._k+'\',-1)">−</button><span class="ci-qty">'+item.qty+'</span><button class="ci-qbtn" onclick="adjQty(\''+item._k+'\',1)">+</button></div>'
+      +'<div class="ci-price">₦'+Math.round(item.price*item.qty).toLocaleString('en-NG')+'</div>'
+      +'<button class="ci-del" onclick="remItem(\''+item._k+'\')">×</button>'
+    +'</div>';
+  }).join('');
+  var sub=_cart.reduce(function(s,i){return s+(i.price*i.qty);},0);
+  var tot=Math.max(0,sub-_disc);
+  document.getElementById('c-subtotal').textContent='₦'+Math.round(sub).toLocaleString('en-NG');
+  document.getElementById('c-total').textContent='₦'+Math.round(tot).toLocaleString('en-NG');
+  document.getElementById('c-btn').disabled=false;
+  calcChange();
+}
+
+function applyDiscount(){
+  var v=Number(document.getElementById('disc-val').value)||0;
+  var t=document.getElementById('disc-type').value;
+  var sub=_cart.reduce(function(s,i){return s+(i.price*i.qty);},0);
+  _disc=t==='percent'?Math.round(sub*v/100):v;
+  _disc=Math.min(_disc,sub);
+  document.getElementById('disc-show').style.display=_disc>0?'flex':'none';
+  document.getElementById('c-disc').textContent='−₦'+Math.round(_disc).toLocaleString('en-NG');
+  renderCart();posToast('Discount: ₦'+Math.round(_disc).toLocaleString('en-NG'),'success');
+}
+
+function selPay(m,btn){_pay=m;document.querySelectorAll('.pay-method').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');calcChange();}
+function getTotal(){var s=_cart.reduce(function(s,i){return s+(i.price*i.qty);},0);return Math.max(0,s-_disc);}
+function calcChange(){
+  var tot=getTotal(),amt=Number(document.getElementById('pay-amt').value)||0,el=document.getElementById('pay-change');
+  if(amt>0&&_pay==='cash'){
+    var ch=amt-tot;el.style.display='block';
+    el.style.color=ch>=0?'var(--green)':'var(--red)';
+    el.textContent=ch>=0?'Change: ₦'+Math.round(ch).toLocaleString('en-NG'):'Short: ₦'+Math.round(Math.abs(ch)).toLocaleString('en-NG');
+  }else{el.style.display='none';}
+}
+
+async function processCheckout(){
+  if(!_cart.length){posToast('Cart is empty','error');return;}
+  var tot=getTotal(),amt=Number(document.getElementById('pay-amt').value)||0;
+  if(_pay==='cash'&&amt>0&&amt<tot){posToast('Amount less than total','error');return;}
+  var ref='POS-'+Date.now().toString(36).toUpperCase();
+  var sub=_cart.reduce(function(s,i){return s+(i.price*i.qty);},0);
+  var order={ref,items:_cart.map(function(i){return{k:i._k,name:i.name,price:i.price,qty:i.qty};}),subtotal:sub,discount:_disc,total:tot,payMethod:_pay,tendered:amt||tot,change:Math.max(0,(amt||tot)-tot),cashier:localStorage.getItem('qc_logged_user')||'pos',source:'pos',createdAt:new Date().toISOString(),status:'paid'};
+  // Update stock
+  _cart.forEach(function(ci){var p=_prods.find(function(x){return x._k===ci._k;});if(p&&Number(p.quantity)>0){p.quantity=Math.max(0,Number(p.quantity)-ci.qty);if(navigator.onLine)fetch(DB+'/'+ci._k+'/quantity.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(p.quantity)}).catch(function(){});}});
+  if(navigator.onLine){try{await fetch(ODB+'/'+ref+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(order)});}catch(e){qOff(order);}}else{qOff(order);}
+  _txns.push(order);showReceipt(order);
+}
+
+function qOff(o){var q=JSON.parse(localStorage.getItem('qc_pos_q')||'[]');q.push(o);localStorage.setItem('qc_pos_q',JSON.stringify(q));}
+async function syncOffline(){var q=JSON.parse(localStorage.getItem('qc_pos_q')||'[]');if(!q.length)return;var ok=0;for(var i=0;i<q.length;i++){try{await fetch(ODB+'/'+q[i].ref+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(q[i])});ok++;}catch(e){break;}}if(ok){localStorage.setItem('qc_pos_q',JSON.stringify(q.slice(ok)));posToast('✅ Synced '+ok+' offline sale(s)','success');}}
+
+function showReceipt(o){
+  var biz=localStorage.getItem('qc_biz_name')||'QuickCart Store';
+  var now=new Date();
+  var h='<div class="r-logo">'+esc(biz)+'</div><div class="r-sub">POS Terminal · '+now.toLocaleString('en-NG')+'</div><div class="r-divider"></div><div style="font-size:10px;color:#888;margin-bottom:8px;">Ref: '+o.ref+'</div>'
+    +o.items.map(function(it){return '<div class="r-item"><span class="n">'+esc(it.name)+' ×'+it.qty+'</span><span>₦'+Math.round(it.price*it.qty).toLocaleString('en-NG')+'</span></div>';}).join('')
+    +'<div class="r-divider"></div><div class="r-total-sec">'
+    +(o.discount?'<div class="r-total-row" style="font-weight:400;font-size:11px;color:#666;"><span>Discount</span><span>−₦'+Math.round(o.discount).toLocaleString('en-NG')+'</span></div>':'')
+    +'<div class="r-total-row"><span>TOTAL</span><span>₦'+Math.round(o.total).toLocaleString('en-NG')+'</span></div>'
+    +'<div class="r-total-row" style="font-weight:400;font-size:11px;color:#666;"><span>'+o.payMethod.toUpperCase()+'</span><span>₦'+Math.round(o.tendered).toLocaleString('en-NG')+'</span></div>'
+    +(o.change>0?'<div class="r-total-row" style="color:#00875a;"><span>CHANGE</span><span>₦'+Math.round(o.change).toLocaleString('en-NG')+'</span></div>':'')
+    +'</div><div class="r-thank">Thank You! 🙏<br><small style="font-size:10px;font-weight:400;color:#aaa;">Powered by QuickCart</small></div>';
+  document.getElementById('rec-inner').innerHTML=h;
+  document.getElementById('rec-overlay').classList.add('open');
+}
+
+function newSale(){
+  document.getElementById('rec-overlay').classList.remove('open');
+  _cart=[];_disc=0;document.getElementById('disc-val').value='';document.getElementById('disc-show').style.display='none';
+  document.getElementById('pay-amt').value='';document.getElementById('pay-change').style.display='none';
+  renderCart();loadProds();posToast('✅ Ready for next sale','success');
+}
+
+function openSummary(){
+  var rev=_txns.reduce(function(s,t){return s+t.total;},0);
+  var items=_txns.reduce(function(s,t){return s+t.items.reduce(function(ss,i){return ss+i.qty;},0);},0);
+  document.getElementById('s-txns').textContent=_txns.length;
+  document.getElementById('s-rev').textContent='₦'+Math.round(rev).toLocaleString('en-NG');
+  document.getElementById('s-items').textContent=items;
+  var pb={};_txns.forEach(function(t){pb[t.payMethod]=(pb[t.payMethod]||0)+t.total;});
+  document.getElementById('s-pay').innerHTML=Object.entries(pb).map(function(e){return '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);font-size:12px;"><span style="text-transform:capitalize;color:var(--text2);">'+e[0]+'</span><span style="font-family:\'DM Mono\',monospace;color:var(--gold);">₦'+Math.round(e[1]).toLocaleString('en-NG')+'</span></div>';}).join('')||'<p style="font-size:12px;color:var(--text3);">No sales yet</p>';
+  document.getElementById('s-txn-list').innerHTML=_txns.slice().reverse().slice(0,8).map(function(t){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);"><div><div style="font-size:10px;font-family:\'DM Mono\',monospace;color:var(--text3);">'+t.ref+'</div><div style="font-size:11px;color:var(--text2);">'+t.items.length+' item(s) · '+t.payMethod+'</div></div><div style="font-family:\'DM Mono\',monospace;font-size:14px;font-weight:600;color:var(--green);">₦'+Math.round(t.total).toLocaleString('en-NG')+'</div></div>';}).join('')||'<p style="font-size:12px;color:var(--text3);">No sales yet</p>';
+  document.getElementById('sum-overlay').classList.add('open');
+}
+
+function exportDay(){
+  if(!_txns.length){posToast('No sales to export','error');return;}
+  var rows=['Ref,Items,Subtotal,Discount,Total,Method,Time'];
+  _txns.forEach(function(t){rows.push([t.ref,t.items.length,t.subtotal,t.discount||0,t.total,t.payMethod,t.createdAt].join(','));});
+  var b=new Blob([rows.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='pos-report-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  posToast('✅ Exported','success');
+}
+
+function posToast(m,t){var el=document.getElementById('pos-toast');el.textContent=m;el.className='pos-toast '+(t||'');el.classList.add('on');setTimeout(function(){el.classList.remove('on');},2500);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){['rec-overlay','sum-overlay'].forEach(function(id){document.getElementById(id).classList.remove('open');});}
+  if(e.key==='F2'){document.getElementById('pos-search').focus();}
+});
+</script></body></html>
